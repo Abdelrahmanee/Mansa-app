@@ -32,7 +32,7 @@ export const bootstrap = (app) => {
     app.post("/webhook", express.raw({ type: "application/json" }),
 
         catchAsyncError(async (request, response) => {
-            console.log(process.env.WEB_HOOK_SECRET);
+            console.log(process.env.WEB_HOOK_SECRET+" sl");
 
             const sig = request.headers["stripe-signature"];
 
