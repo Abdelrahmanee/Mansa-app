@@ -21,6 +21,8 @@ export const bootstrap = (app) => {
     
     // Define the webhook route
     app.post('/webhook', (req, res) => {
+        console.log("Webhook");
+        
       webhookController.handleWebhook(req, res);
     });
 
