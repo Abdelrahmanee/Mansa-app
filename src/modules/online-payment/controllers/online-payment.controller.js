@@ -28,7 +28,7 @@ export const makeOnlineOrder = async (data) => {
   const { client_reference_id: userId, metadata: { lecture_id } , customer_email } = data;  // Correctly destructuring lecture_id and userId
 
   // Fetch user and lecture details
-  const user = await userModel.findOne({email : customer_email});
+  const user = await userModel.findById(client_reference_id);
   const lecture = await lectureModel.findById(lecture_id);
 
   if (!user) throw new AppError("User not found", 404);

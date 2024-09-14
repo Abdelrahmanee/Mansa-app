@@ -29,6 +29,7 @@ export const bootstrap = (app) => {
 
     app.post("/webhook",express.raw({ type: "application/json" }),
         catchAsyncError(async (request, response) => {
+            
             const sig = request.headers["stripe-signature"];
     
             let event;
@@ -48,10 +49,10 @@ export const bootstrap = (app) => {
             switch (event.type) {
                 case "checkout.session.completed":
                     const data = event.data.object;
+                    console.log("data", {data});
+                    
                     await makeOnlineOrder(data);
-                    // Then define and call a function to handle the event checkout.session.completed
                     break;
-                // ... handle other event types
                 default:
                     console.log(`Unhandled event type ${event.type}`);
             }
