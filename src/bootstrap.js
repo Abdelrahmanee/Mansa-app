@@ -11,6 +11,7 @@ import cookieParser from 'cookie-parser'
 import StripePaymentService from './modules/online-payment/services/online-payment.service.js'
 import { WebhookController } from './modules/online-payment/controllers/webhook.controller.js'
 import { makeOnlineOrder } from './modules/online-payment/controllers/online-payment.controller.js'
+import Stripe from 'stripe'
 
 
 export const bootstrap = (app) => {
@@ -19,21 +20,23 @@ export const bootstrap = (app) => {
 
     // // Initialize the controller with dependency injection
     // const webhookController = new WebhookController(stripePaymentService);
-    
+
     // // Define the webhook route
     // app.post('/webhook', (req, res) => {
     //     console.log("Webhook");
-        
+
     //   webhookController.handleWebhook(req, res);
     // });
 
-    app.post("/webhook",express.raw({ type: "application/json" }),
+    app.post("/webhook", express.raw({ type: "application/json" }),
+
         catchAsyncError(async (request, response) => {
-            
+            console.log("sjakdq");
+
             const sig = request.headers["stripe-signature"];
-    
+
             let event;
-    
+
             try {
                 event = Stripe.webhooks.constructEvent(
                     request.body,
@@ -44,25 +47,25 @@ export const bootstrap = (app) => {
                 response.status(400).send(`Webhook Error: ${err.message}`);
                 return;
             }
-    
+
             // Handle the event
             switch (event.type) {
                 case "checkout.session.completed":
                     const data = event.data.object;
-                    console.log("data", {data});
-                    
+                    console.log("data", { data });
+
                     await makeOnlineOrder(data);
                     break;
                 default:
                     console.log(`Unhandled event type ${event.type}`);
             }
-    
+
             // Return a 200 response to acknowledge receipt of the event
             response.send();
         })
     );
-    
-    
+
+
 
     cloudinaryCofigration();
 
