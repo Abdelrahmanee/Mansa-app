@@ -12,8 +12,9 @@ import StripePaymentService from './modules/online-payment/services/online-payme
 import { WebhookController } from './modules/online-payment/controllers/webhook.controller.js'
 import { makeOnlineOrder } from './modules/online-payment/controllers/online-payment.controller.js'
 import Stripe from 'stripe'
+import dotenv from 'dotenv'
 
-
+dotenv.config()
 export const bootstrap = (app) => {
 
     // const stripePaymentService = new StripePaymentService();
@@ -31,7 +32,7 @@ export const bootstrap = (app) => {
     app.post("/webhook", express.raw({ type: "application/json" }),
 
         catchAsyncError(async (request, response) => {
-            console.log("sjakdq");
+            console.log(process.env.WEB_HOOK_SECRET);
 
             const sig = request.headers["stripe-signature"];
 
