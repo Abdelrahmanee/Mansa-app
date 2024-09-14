@@ -13,7 +13,6 @@ import mongoose from "mongoose";
 
 export const login = catchAsyncError(async (req, res, next) => {
     const user = req.user;
-    console.log(req.user);
     
     // Check if the user is blocked
     await AuthService.checkUserBlocked(user);
