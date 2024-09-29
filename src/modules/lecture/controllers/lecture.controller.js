@@ -7,7 +7,6 @@ import lectureService from "../service/lecture.service.js";
 import { generateUniqueCode } from "../../../utilies/generateUniqueCode.js";
 import path from 'path'
 import { fileURLToPath } from 'url';
-import { deleteFileFromDisk } from "../../../utilies/removeFile.js";
 
 
 // Get the equivalent of __dirname in ES modules
@@ -19,11 +18,15 @@ export const addLecture = catchAsyncError(async (req, res, next) => {
 
   const session = await mongoose.startSession();
   session.startTransaction();
+
   try {
     if (!req.user) throw new AppError("you must be logged in", 498)
     // Create the lecture document without the logo first
     const lectureData = { ...req.body, teacherId: req.user._id };
     const lecture = await lectureService.createLecture(lectureData, session);
+
+    console.log(req.files.pdfs[0].cloudinaryResult);
+
 
     // if (!req.file) throw new AppError('No file uploaded', 400)
     const { logoURL } = await LectureService.uploadLogo(req.files.logo[0], lecture._id)
@@ -36,7 +39,7 @@ export const addLecture = catchAsyncError(async (req, res, next) => {
     // Upload videos if provided
     if (req.files && req.files.videos) {
       const videoPromises = req.files.videos.map(file =>
-        LectureService.uploadVideo(file, lecture._id)
+        LectureService.uploadVideo(file.cloudinaryResult.secure_url, lecture._id, file.cloudinaryResult.public_id)
       );
       const videoUploadResults = await Promise.all(videoPromises);
 
@@ -44,30 +47,22 @@ export const addLecture = catchAsyncError(async (req, res, next) => {
       const videoURLs = videoUploadResults.map(result => result.videoURL);
       lecture.videos = videoURLs;
 
-      req.files.videos.forEach(file => {
-        const filePath = path.join(__dirname, '..', file.path);
-        console.log(filePath);
-
-        deleteFileFromDisk(filePath);
-      });
     }
 
     // Upload PDFs if provided
     if (req.files && req.files.pdfs) {
       const pdfPromises = req.files.pdfs.map(file =>
-        LectureService.uploadPDF(file, lecture._id)
+        LectureService.uploadPDF(file.cloudinaryResult.secure_url, lecture._id, file.cloudinaryResult.public_id)
       );
       const pdfUploadResults = await Promise.all(pdfPromises);
 
+      console.log(pdfUploadResults);
+
+
       // Extract PDF URLs and update the lecture
       const pdfURLs = pdfUploadResults.map(result => result.PDFURL);
-
       lecture.pdfs = pdfURLs;
 
-      req.files.pdfs.forEach(file => {
-        const filePath = path.join(__dirname, '..', file.path);
-        deleteFileFromDisk(filePath);
-      });
     }
     await lecture.save({ session });
 
@@ -90,6 +85,30 @@ export const addLecture = catchAsyncError(async (req, res, next) => {
     // Delete the lecture document if it was created but image upload failed
     if (error.message === 'Logo upload failed' && lecture) {
       await lecture.remove({ session });
+    }
+
+    // Cleanup uploaded videos and PDFs from Cloudinary
+    if (req.files && req.files.videos) {
+      await Promise.all(req.files.videos.map(async (file) => {
+        try {
+          console.log(file.cloudinaryResult.public_id);
+          await cloudinary.uploader.destroy(file.cloudinaryResult.public_id, { resource_type: 'video' });
+        } catch (error) {
+          return next(new AppError('Error deleting video from Cloudinary', 500));
+        }
+      }));
+    }
+
+
+    if (req.files && req.files.pdfs) {
+      await Promise.all(req.files.pdfs.map(async (file) => {
+        try {
+          console.log(file.cloudinaryResult.public_id);
+          await cloudinary.uploader.destroy(file.cloudinaryResult.public_id, { resource_type: 'raw' });
+        } catch (error) {
+          return next(new AppError('Error deleting video from Cloudinary', 500));
+        }
+      }));
     }
 
     session.endSession();
@@ -187,7 +206,7 @@ export const grantStudentAccess = catchAsyncError(async (req, res, next) => {
     const studentId = req.user._id;
     const { lectureId, code } = req.body;
 
-    
+
 
     // Check if the student has access (this check assumes no permanent access)
     const studentLecture = await lectureService.hasAccess({ studentId, lectureId });

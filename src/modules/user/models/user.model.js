@@ -92,6 +92,7 @@ const userSchema = new mongoose.Schema({
             ref: 'Lecture',
         }
     }],
+    
 },
     { timestamps: true }
 )

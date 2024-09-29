@@ -25,34 +25,52 @@ class PaymentController {
   }
 }
 export const makeOnlineOrder = async (data) => {
-  const { client_reference_id: userId, metadata: { lecture_id } , customer_email } = data;  // Correctly destructuring lecture_id and userId
+  const { client_reference_id: userId, metadata: { lecture_id }, customer_email } = data;
 
-  // Fetch user and lecture details
-  const user = await userModel.findById(userId);
-  const lecture = await lectureModel.findById(lecture_id);
+  try {
+    // Fetch user and lecture details concurrently
+    const [user, lecture] = await Promise.all([
+      userModel.findById(userId),
+      lectureModel.findById(lecture_id),
+    ]);
 
-  if (!user) throw new AppError("User not found", 404);
-  if (!lecture) throw new AppError("Lecture not found", 404);
+    // Check if user and lecture exist
+    if (!user) throw new AppError("User not found", 404);
+    if (!lecture) throw new AppError("Lecture not found", 404);
 
-  const code = generateUniqueCode();
-  if (!code) throw new AppError("Code is required", 400);
-  
-  // Generate the lecture code and store it
-  const generatedCode = await lectureService.generateLectureCode({
-    lectureId: lecture._id,  
-    code,
-    isUsed: false
-  });
-  
-  console.log(user.email);
-  console.log(user);
-  // Send email to the user with the lecture code
-  await sendEmail(
-    user.email,
-    "Lecture Code",
-    LECTURE_CODE_TEMPLATE,
-    generatedCode.code
-  );
+    // Generate unique code
+    const code = generateUniqueCode();
+    if (!code) throw new AppError("Code is required", 400);
+
+    // Generate the lecture code and store it
+    const generatedCode = await lectureService.generateLectureCode({
+      lectureId: lecture._id,
+      code,
+      isUsed: false
+    });
+
+    // Logging for debugging
+    console.log('User email:', user.email);
+    console.log('Lecture details:', lecture);
+
+    // Send email to the user with the lecture code
+    await sendEmail(
+      user.email,
+      "Lecture Code",
+      LECTURE_CODE_TEMPLATE,
+      generatedCode.code
+    );
+
+    // Optional: Return some result if needed
+    return {
+      success: true,
+      message: 'Order processed and email sent successfully.',
+      generatedCode: generatedCode.code
+    };
+  } catch (error) {
+    console.error('Error in makeOnlineOrder:', error); // Log the error for debugging
+    throw error; // Rethrow the error to handle it further up the call stack
+  }
 };
 
 export default PaymentController;

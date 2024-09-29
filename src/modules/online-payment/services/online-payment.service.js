@@ -12,7 +12,7 @@ class StripePaymentService {
     async createPaymentIntent(lecture_id, studentId) {
         let lecture = await onlinePaymentRepository.getLectureInfo(lecture_id)
         let user = await onlinePaymentRepository.getUserInfo(studentId)
-        // Check if lecture and user are found
+        
         if (!lecture) {
             throw new Error('Lecture not found');
         }
@@ -35,7 +35,7 @@ class StripePaymentService {
                     },
                 ],
                 mode: 'payment',
-                success_url: `https://mansasc-git-main-abdoooos-projects.vercel.app/lecture/${lecture_id}/access-code`,
+                success_url: `https://mansasc-git-main-abdoooos-projects.vercel.app/lecture/${lecture_id}`,
                 cancel_url: 'https://mansasc-git-main-abdoooos-projects.vercel.app/',
                 client_reference_id: user._id.toString(), // Ensure user._id is a string
                 customer_email: user.email,
@@ -49,9 +49,9 @@ class StripePaymentService {
     }
 
     async handleWebhookEvent(event) {
-        console.log('Stripe event received:', event);
         const data = event.data.object;
-        console.log(data.client_reference_id);
+        console.log(data);
+        
         await makeOnlineOrder(data)
     }
 }

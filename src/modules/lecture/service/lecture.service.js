@@ -42,23 +42,17 @@ class LectureService {
         };
     }
     // Upload Video
-    async uploadVideo(file, lectureId) {
-
+    async uploadVideo(secure_url, lectureId, public_id) {
         try {
-            const result = await cloudinary.v2.uploader.upload(file.path, {
-                resource_type: 'video', // This ensures the file is treated as a video
-                folder: 'lectures/videos'
-            });
             const videoData = {
                 lectureId,
-                publicId: result.public_id,
-                videoURL: result.secure_url,
+                publicId: public_id,
+                videoURL: secure_url,
             }
             const video = await videoRepository.saveVideo(videoData)
-            console.log(video);
             return {
-                videoURL: result.secure_url,
-                publicId: result.public_id,
+                videoURL: secure_url,
+                publicId: public_id,
                 video
             };
         } catch (error) {
@@ -67,21 +61,22 @@ class LectureService {
     }
 
     // Upload PDF
-    async uploadPDF(file, lectureId) {
+    async uploadPDF(secure_url, lectureId, public_id) {
         try {
-            const result = await cloudinary.v2.uploader.upload(file.path, {
-                resource_type: 'raw', // PDFs are usually treated as raw files
-                folder: 'lectures/pdfs'
-            });
             const pdfData = {
                 lectureId,
-                PDFURL: result.secure_url,
-                publicId: result.public_id
+                PDFURL: secure_url,
+                publicId: public_id
             }
             const pdf = await pdfRepository.savePdf(pdfData)
+            console.log({
+                PDFURL: secure_url,
+                publicId: public_id,
+                pdf
+            })
             return {
-                PDFURL: result.secure_url,
-                publicId: result.public_id,
+                PDFURL: secure_url,
+                publicId: public_id,
                 pdf
             };
         } catch (error) {
@@ -114,7 +109,7 @@ class LectureService {
         await StudentLectureModel.create({ studentId, lectureId, accessCodeId, hasPermanentAccess, });
         await userModel.findByIdAndUpdate(
             studentId,
-            { $push: { lectures: { lectureId } } } 
+            { $push: { lectures: { lectureId } } }
         );
 
     }

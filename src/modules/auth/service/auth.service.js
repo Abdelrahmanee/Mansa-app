@@ -68,8 +68,8 @@ class AuthService {
         // Generate the JWT token
         const token = jwt.sign(
             { email, sex, userName, role, status, age, mobileNumber, _id },
-            process.env.SECRET_KEY,
-            { expiresIn: '1d' }
+            process.env.SECRET_KEY
+            // ,{ expiresIn: '1d' }
         );
         return token;
     }
@@ -91,10 +91,11 @@ class AuthService {
     setCookie(res, token) {
         // Set the cookie with the auth token
         res.cookie('authToken', token, {
-            httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
-            sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Use 'none' for cross-origin in production
-            secure: process.env.NODE_ENV === 'production', // Only secure in production
-            maxAge: 24 * 60 * 60 * 1000 // 1 day
+            httpOnly: false, // Prevents client-side JavaScript from accessing the cookie
+            sameSite: 'none', // Use 'none' for cross-origin in production
+            secure: true, // Only secure in production
+            maxAge: 24 * 60 * 60 * 1000,// 1 day,
+            path: '/', // Set the cookie path to the root path
         });
     }
 
